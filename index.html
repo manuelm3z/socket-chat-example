@@ -75,8 +75,22 @@
 					li.innerText = msg;
 					list.appendChild(li);
 				});
+				socket.on('user_conected', event => {
+					var small = document.createElement('small');
+					small.innerText = 'New user connected';
 
+					var li = document.createElement('li');
+					li.appendChild(small);
+					list.appendChild(li);
+				});
+				socket.on('user_disconnected', event => {
+					var small = document.createElement('small');
+					small.innerText = "A user left :'(";
 
+					var li = document.createElement('li');
+					li.appendChild(small);
+					list.appendChild(li);
+				});
 			}
 		</script>
 	</body>
