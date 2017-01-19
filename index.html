@@ -72,6 +72,12 @@
                         body: event.target.message.value
                     });
 
+                    var li = document.createElement('LI');
+
+                    li.innerText = nickname + ': ' + event.target.message.value;
+
+                    list.appendChild(li);
+
                     event.target.message.value = '';
                     
                     return false;
@@ -110,9 +116,13 @@
 
             if (list !== null) {
                 socket.on('chat message', msg => {
-                    var li = document.createElement('LI');
-                    li.innerText = msg.by + ': ' + msg.body;
-                    list.appendChild(li);
+                    if (msg.by !== nickname) {
+                        var li = document.createElement('LI');
+
+                        li.innerText = msg.by + ': ' + msg.body;
+
+                        list.appendChild(li);
+                    }
                 });
 
                 socket.on('user_conected', user => {
