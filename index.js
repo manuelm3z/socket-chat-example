@@ -7,16 +7,24 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', socket => {
+    socket.on('new_user_conected', user => {
+        io.emit('user_conected', user);
+    });
+    
     socket.on('chat message', msg => {
         io.emit('chat message', msg);
     });
     
-    socket.on('disconnect', () => {
-        io.emit('user_disconnected');
+    socket.on('new_typing', user => {
+        io.emit('typing', user);
     });
 
-    socket.on('new_user_conected', user => {
-        io.emit('user_conected', user);
+    socket.on('new_stop_typing', user => {
+        io.emit('stop_typing', user);
+    });
+
+    socket.on('disconnect', () => {
+        io.emit('user_disconnected');
     });
 });
 

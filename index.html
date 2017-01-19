@@ -47,6 +47,7 @@
         <ul id="messages"></ul>
         <form action="" id="box-message">
             <input type="text" autocomplete="off" id="m" name="message"/><button>Send</button>
+            <p id="typing" style="color: #fff;"></p>
         </form>
         <div id="modal-nickname" style="transition: all .5s;;padding: 19% 0;background-color: rgba(0, 0, 0, .5);position: fixed;top: 0;right: 0;bottom: 0;left: 0;text-align: center;">
             <div style="background-color: #fff;opacity: 1;display: inline-block;vertical-align: middle;text-align: left;position: relative;">
@@ -59,7 +60,7 @@
         </div>
         <script src="/socket.io/socket.io.js"></script>
         <script>
-            var socket = io(), nickname = '', list = document.getElementById('messages');
+            var socket = io(), nickname = '', list = document.getElementById('messages'), p = document.getElementById('typing'), input = document.getElementById('m');
 
             var form = document.getElementById('box-message');
 
@@ -71,6 +72,8 @@
                         by: nickname,
                         body: event.target.message.value
                     });
+
+                    socket.emit('new_stop_typing', nickname);
 
                     var li = document.createElement('LI');
 
@@ -112,7 +115,11 @@
                 });
             }
 
-            
+            if (input !== null) {
+                input.addEventListener('keyup', event => {
+                    socket.emit('new_typing', nickname);
+                });
+            }
 
             if (list !== null) {
                 socket.on('chat message', msg => {
@@ -143,13 +150,32 @@
 
                 socket.on('user_disconnected', event => {
                     var small = document.createElement('small');
+                    
                     small.innerText = "A user left :'(";
 
                     var li = document.createElement('li');
+
                     li.appendChild(small);
+                    
                     list.appendChild(li);
                 });
             }
+
+            socket.on('typing', user => {
+                if (user !== nickname) {
+                    p.innerText = user + ' is typing';
+                }
+            });
+
+            socket.on('stop_typing', user => {
+                var text = p.innerText;
+
+                var name = text.slice(0,text.indexOf(' is typing'));
+
+                if (user == name) {
+                    p.innerText = '';
+                }
+            });
         </script>
     </body>
 </html>
