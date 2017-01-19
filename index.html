@@ -66,6 +66,18 @@
 					return false;
 				});
 			}
+
+			var list = document.getElementById('messages');
+
+			if (list !== null) {
+				socket.on('chat message', msg => {
+					var li = document.createElement('LI');
+					li.innerText = msg;
+					list.appendChild(li);
+				});
+
+
+			}
 		</script>
 	</body>
 </html>
