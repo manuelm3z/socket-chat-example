@@ -1,97 +1,145 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Socket.IO chat</title>
-		<style>
-			* {
-				margin: 0;
-				padding: 0;
-				box-sizing: border-box;
-			}
-			body {
-				font: 13px Helvetica, Arial;
-			}
-			form {
-				background: #000;
-				padding: 3px;
-				position: fixed;
-				bottom: 0;
-				width: 100%;
-			}
-				form input {
-					border: 0;
-					padding: 10px;
-					width: 90%;
-					margin-right: .5%;
-				}
-				form button {
-					width: 9%;
-					background: rgb(130, 224, 255);
-					border: none;
-					padding: 10px;
-				}
-			#messages {
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-				#messages li {
-					padding: 5px 10px;
-				}
-					#messages li:nth-child(odd) {
-						background: #eee;
-					}
-		</style>
-	</head>
-	<body>
-		<ul id="messages"></ul>
-		<form action="">
-			<input type="text" autocomplete="off" id="m"/><button>Send</button>
-		</form>
-		<script src="/socket.io/socket.io.js"></script>
-		<script>
-			var socket = io();
+    <head>
+        <title>Socket.IO chat</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font: 13px Helvetica, Arial;
+            }
+            form#box-message {
+                background: #000;
+                padding: 3px;
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+            }
+                form#box-message input {
+                    border: 0;
+                    padding: 10px;
+                    width: 90%;
+                    margin-right: .5%;
+                }
+                form#box-message button {
+                    width: 9%;
+                    background: rgb(130, 224, 255);
+                    border: none;
+                    padding: 10px;
+                }
+            #messages {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+            }
+                #messages li {
+                    padding: 5px 10px;
+                }
+                    #messages li:nth-child(odd) {
+                        background: #eee;
+                    }
+        </style>
+    </head>
+    <body>
+        <ul id="messages"></ul>
+        <form action="" id="box-message">
+            <input type="text" autocomplete="off" id="m" name="message"/><button>Send</button>
+        </form>
+        <div id="modal-nickname" style="transition: all .5s;;padding: 19% 0;background-color: rgba(0, 0, 0, .5);position: fixed;top: 0;right: 0;bottom: 0;left: 0;text-align: center;">
+            <div style="background-color: #fff;opacity: 1;display: inline-block;vertical-align: middle;text-align: left;position: relative;">
+                <h4 style="padding-left: 5px;">Type your nickname</h4>
+                <form action="" id='form-nickname' style="padding: 5px;">
+                    <input type="text" autocomplete="off" id="nickname" name="nickname" />
+                    <button>Go</button>
+                </form>
+            </div>
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io(), nickname = '', list = document.getElementById('messages');
 
-			var form = document.querySelector('form');
+            var form = document.getElementById('box-message');
 
-			if (form !== null) {
-				var input = document.getElementById('m');
-				form.addEventListener('submit', event => {
-					event.preventDefault();
+            if (form !== null) {
+                form.addEventListener('submit', event => {
+                    event.preventDefault();
 
-					socket.emit('chat message', input.value);
-					
-					input.value = '';
-					
-					return false;
-				});
-			}
+                    socket.emit('chat message', {
+                        by: nickname,
+                        body: event.target.message.value
+                    });
 
-			var list = document.getElementById('messages');
+                    event.target.message.value = '';
+                    
+                    return false;
+                });
+            }
 
-			if (list !== null) {
-				socket.on('chat message', msg => {
-					var li = document.createElement('LI');
-					li.innerText = msg;
-					list.appendChild(li);
-				});
-				socket.on('user_conected', event => {
-					var small = document.createElement('small');
-					small.innerText = 'New user connected';
+            var formNick = document.getElementById('form-nickname');
 
-					var li = document.createElement('li');
-					li.appendChild(small);
-					list.appendChild(li);
-				});
-				socket.on('user_disconnected', event => {
-					var small = document.createElement('small');
-					small.innerText = "A user left :'(";
+            if (formNick !== null) {
+                formNick.addEventListener('submit', event => {
+                    event.preventDefault();
 
-					var li = document.createElement('li');
-					li.appendChild(small);
-					list.appendChild(li);
-				});
-			}
-		</script>
-	</body>
+                    if (event.target.nickname.value !== '') {
+                        nickname = event.target.nickname.value;
+
+                        var modal = document.getElementById('modal-nickname');
+
+                        modal.style.display = 'none';
+
+                        var small = document.createElement('small');
+
+                        small.innerText = 'You now conected as ' + nickname;
+
+                        var li = document.createElement('li');
+
+                        li.appendChild(small);
+
+                        list.appendChild(li);
+
+                        socket.emit('new_user_conected', nickname);
+                    }
+                });
+            }
+
+            
+
+            if (list !== null) {
+                socket.on('chat message', msg => {
+                    var li = document.createElement('LI');
+                    li.innerText = msg.by + ': ' + msg.body;
+                    list.appendChild(li);
+                });
+
+                socket.on('user_conected', user => {
+                    if (user !== nickname) {
+                        var small = document.createElement('small');
+
+                        small.innerText = user + ' is now connected';
+
+                        var li = document.createElement('li');
+                        
+                        li.appendChild(small);
+
+                        if (list.children.length > 0) {
+                            list.appendChild(li);
+                        }
+                    }
+                });
+
+                socket.on('user_disconnected', event => {
+                    var small = document.createElement('small');
+                    small.innerText = "A user left :'(";
+
+                    var li = document.createElement('li');
+                    li.appendChild(small);
+                    list.appendChild(li);
+                });
+            }
+        </script>
+    </body>
 </html>
