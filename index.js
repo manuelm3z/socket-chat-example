@@ -24,7 +24,15 @@ io.on('connection', socket => {
     });
 
     socket.on('disconnect', () => {
-        io.emit('user_disconnected');
+        const clients = io.of('/').connected;
+
+        let users = [];
+
+        for (let user in clients) {
+            users.push(user);
+        }
+
+        io.emit('user_disconnected', users);
     });
 });
 

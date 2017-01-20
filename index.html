@@ -34,6 +34,8 @@
                 list-style-type: none;
                 margin: 0;
                 padding: 0;
+                width: 90%;
+                display: inline-block;
             }
                 #messages li {
                     padding: 5px 10px;
@@ -41,10 +43,19 @@
                     #messages li:nth-child(odd) {
                         background: #eee;
                     }
+            #users {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                width: 9%;
+                display: inline-block;
+                vertical-align: top;
+            }
         </style>
     </head>
     <body>
         <ul id="messages"></ul>
+        <ul id="users"></ul>
         <form action="" id="box-message">
             <input type="text" autocomplete="off" id="m" name="message"/><button>Send</button>
             <p id="typing" style="color: #fff;"></p>
@@ -60,7 +71,7 @@
         </div>
         <script src="/socket.io/socket.io.js"></script>
         <script>
-            var socket = io(), nickname = '', list = document.getElementById('messages'), p = document.getElementById('typing'), input = document.getElementById('m');
+            var socket = io(), list = document.getElementById('messages'), p = document.getElementById('typing'), input = document.getElementById('m'), users_list = document.getElementById('users');
 
             var form = document.getElementById('box-message');
 
@@ -69,15 +80,18 @@
                     event.preventDefault();
 
                     socket.emit('chat message', {
-                        by: nickname,
+                        by: socket.nickname,
                         body: event.target.message.value
                     });
 
-                    socket.emit('new_stop_typing', nickname);
+                    socket.emit('new_stop_typing', {
+                        id: socket.id,
+                        name: socket.nickname
+                    });
 
                     var li = document.createElement('LI');
 
-                    li.innerText = nickname + ': ' + event.target.message.value;
+                    li.innerText = socket.nickname + ': ' + event.target.message.value;
 
                     list.appendChild(li);
 
@@ -94,7 +108,7 @@
                     event.preventDefault();
 
                     if (event.target.nickname.value !== '') {
-                        nickname = event.target.nickname.value;
+                        socket.nickname = event.target.nickname.value;
 
                         var modal = document.getElementById('modal-nickname');
 
@@ -102,7 +116,7 @@
 
                         var small = document.createElement('small');
 
-                        small.innerText = 'You now conected as ' + nickname;
+                        small.innerText = 'You now conected as ' + socket.nickname;
 
                         var li = document.createElement('li');
 
@@ -110,20 +124,28 @@
 
                         list.appendChild(li);
 
-                        socket.emit('new_user_conected', nickname);
+                        socket.emit('new_user_conected', {
+                            id: socket.id,
+                            name: socket.nickname
+                        });
                     }
                 });
             }
 
             if (input !== null) {
                 input.addEventListener('keyup', event => {
-                    socket.emit('new_typing', nickname);
+                    if (event.key !== 'Enter') {
+                        socket.emit('new_typing', {
+                            id: socket.id,
+                            name: socket.nickname
+                        });
+                    }
                 });
             }
 
             if (list !== null) {
                 socket.on('chat message', msg => {
-                    if (msg.by !== nickname) {
+                    if (msg.by !== socket.nickname) {
                         var li = document.createElement('LI');
 
                         li.innerText = msg.by + ': ' + msg.body;
@@ -133,10 +155,10 @@
                 });
 
                 socket.on('user_conected', user => {
-                    if (user !== nickname) {
+                    if (user.id !== socket.id) {
                         var small = document.createElement('small');
 
-                        small.innerText = user + ' is now connected';
+                        small.innerText = user.name + ' is now connected';
 
                         var li = document.createElement('li');
                         
@@ -145,10 +167,18 @@
                         if (list.children.length > 0) {
                             list.appendChild(li);
                         }
+
+                        var newLi = document.createElement('li');
+
+                        newLi.dataset.id = user.id;
+
+                        newLi.innerText = user.name;
+
+                        users_list.appendChild(newLi);
                     }
                 });
 
-                socket.on('user_disconnected', event => {
+                socket.on('user_disconnected', users => {
                     var small = document.createElement('small');
                     
                     small.innerText = "A user left :'(";
@@ -158,22 +188,37 @@
                     li.appendChild(small);
                     
                     list.appendChild(li);
+
+                    users_list.childNodes.forEach(item => {
+                        var remove = true;
+
+                        users.forEach(user => {
+                            if (item.dataset.id === user) {
+                                remove = false;
+                            }
+                        })
+
+                        if (remove) {
+                            users_list.removeChild(item);
+                        }
+                    });
                 });
             }
 
             socket.on('typing', user => {
-                if (user !== nickname) {
-                    p.innerText = user + ' is typing';
+                console.log('typing');
+                if (user.id !== socket.id) {
+                    p.innerText = user.name + ' is typing';
+
+                    p.dataset.id = user.id;
                 }
             });
 
             socket.on('stop_typing', user => {
-                var text = p.innerText;
-
-                var name = text.slice(0,text.indexOf(' is typing'));
-
-                if (user == name) {
-                    p.innerText = '';
+                console.log('stop_typing', user);
+                if (user.id === p.dataset.id) {
+                    console.log('Deberia barrer');
+                    p.removeChild(p.firstChild);
                 }
             });
         </script>
